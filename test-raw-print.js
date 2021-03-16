@@ -1,50 +1,23 @@
 var drawer = require("./build/Release/drawer.node");
-var setting = drawer.printerDialog();
 var http = require('http')
 var fs = require('fs')
 const jimp = require('jimp');
 
-fs.readFile('bmp_24.bmp', function (err, data) {
+fs.readFile('test.png', function (err, data) {
 	jimp.read(data)
 		.then(image => {
 			// image = image.scale(1);
-			return image.getBufferAsync(jimp.MIME_BMP);
+			return image.getBufferAsync(jimp.MIME_PNG);
 		})
-		.then(buff => {
-			if( setting ){
-				// var hdc = drawer.createDcWithoutDialog({
-				// 	printerName: 'Microsoft Print to PDF'
-				// });
-				var hdc = drawer.createDCWithoutDialog_v2('Microsoft Print to PDF');
-				var dpi = drawer.getDpiOfHdc(hdc);
-				// var dpix = dpi.dpix;
-				// var dpiy = dpi.dpiy;
-				// drawer.beginPrint(hdc);
-				// drawer.startPage(hdc);
-				// drawer.moveTo(hdc, 1.0*dpix, 1.0*dpiy);
-				// drawer.lineTo(hdc, 3.0*dpix, 1.5*dpiy);
-				// // drawer.textOut(hdc, 1.0*dpix, 2.0*dpiy, "Hello, world!");
-				// // var helvetica = drawer.createFont("Helvetica", 0.5*dpiy);
-				// // drawer.selectObject(hdc, helvetica);
-				// // drawer.textOut(hdc, 1.0*dpix, 3.0*dpiy, "Hello, Helvetica");
-				// // drawer.setTextColor(hdc, 0, 0, 255);
-				// // drawer.textOut(hdc, 1.0*dpix, 3.6*dpiy, "Hello, Helvetica");
-				// // var greenPen = drawer.createPen(3, 0, 255, 0);
-				// // drawer.selectObject(hdc, greenPen);
-				// // drawer.moveTo(hdc, 1.0*dpix, 1.5*dpiy);
-				// // drawer.lineTo(hdc, 3.0*dpix, 1.0*dpiy);
-				// // drawer.setBkMode(hdc, drawer.bkModeTransparent);
-				// // drawer.setTextColor(hdc, 0, 255, 0);
-				// // drawer.textOut(hdc, Math.floor(1.1*dpix), Math.floor(3.7*dpiy), "Hello, Helvetica");
-				// const result = drawer.printImageFromBytes(hdc, buff);
-				const result = drawer.printImageFromBytes_v2(hdc, "E:\\Projects\\PrintLib\\test.png");
-				console.log(result);
-				// drawer.endPage(hdc);
-				// drawer.endPrint(hdc);
-				// drawer.deleteDc(hdc);
-				// console.log('printed');
-				// console.log(result);
-			}	
+		.then(async buff => {
+			// const result = await drawer.printImageFromFile("Microsoft Print to PDF", "My_print_job_1", "E:\\Projects\\PrintLib\\sample.png");
+			// const result2 = await drawer.printImageFromFile("Microsoft Print to PDF", "My_print_job_2", "E:\\Projects\\PrintLib\\test.png");
+			// const result3 = await drawer.printImageFromFile("Microsoft Print to PDF", "My_print_job_3", "E:\\Projects\\PrintLib\\bmp_24.bmp");
+			const result4 = await drawer.printImageFromBytes("Microsoft Print to PDF", "My_print_job_1", buff, buff.length);
+			// console.log(result);
+			// console.log(result2);
+			// console.log(result3);	
+			console.log(result4);	
 		})
 })
 
