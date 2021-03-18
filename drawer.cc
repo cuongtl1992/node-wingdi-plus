@@ -89,21 +89,21 @@ void printImageFromFile(const Nan::FunctionCallbackInfo<Value>& args) {
 	GUID pageGuid;
 	float width, height;
 	DOCINFO docInfo = { sizeof(DOCINFO), printJobName };
-	Graphics graphics(hdcPrint);
+	Graphics* graphics = Graphics::FromHDC(hdcPrint);
 
 	int printJobId = StartDoc(hdcPrint, &docInfo);
 
 	// Loading image from file
 	USES_CONVERSION;
-	Image image(A2W(imagePath.c_str()));
+	Image* image = Image::FromFile(A2W(imagePath.c_str()));
 
 	// Get the list of frame dimensions from the Image object
-	dimCount = image.GetFrameDimensionsCount();
+	dimCount = image->GetFrameDimensionsCount();
 	pDimIDs = new GUID[dimCount];
 
 	// Get the number of frames (pages) in the first dimension
-	image.GetFrameDimensionsList(pDimIDs, dimCount);
-	frameCount = image.GetFrameCount(&pDimIDs[0]);
+	image->GetFrameDimensionsList(pDimIDs, dimCount);
+	frameCount = image->GetFrameCount(&pDimIDs[0]);
 
 	// Not use de-constructor
 	delete pDimIDs;
@@ -113,19 +113,20 @@ void printImageFromFile(const Nan::FunctionCallbackInfo<Value>& args) {
 	for (UINT i = 0; i < frameCount; i++)
 	{
 		StartPage(hdcPrint);
-
-		image.SelectActiveFrame(&pageGuid, i);
-		graphics.SetPageUnit(UnitInch);
-
-		width = image.GetWidth() / image.GetHorizontalResolution();
-		height = image.GetHeight() / image.GetVerticalResolution();
-		graphics.DrawImage(&image, 0.f, 0.f, width, height);
-
+		image->SelectActiveFrame(&pageGuid, i);
+		graphics->SetPageUnit(UnitInch);
+		// width = (image_width * 25.4mm / 203 dpi) / 25.4
+		width = (image->GetWidth() * 25.4 / (double)GetDeviceCaps(hdcPrint, LOGPIXELSX)) / 25.4;
+		// height = (image_height * 25.4mm / 203 dpi) / 25.4
+		height = (image->GetHeight() * 25.4 / (double)GetDeviceCaps(hdcPrint, LOGPIXELSY)) / 25.4;
+		graphics->DrawImage(image, 0.f, 0.f, width, height);
 		EndPage(hdcPrint);
 	}
 
 	EndDoc(hdcPrint);
 	DeleteDC(hdcPrint);
+	delete graphics;
+	delete image;
 	GdiplusShutdown(gdiplusToken);
 	args.GetReturnValue().Set(printJobId);
 }
@@ -178,42 +179,44 @@ void printImageFromBytes(const Nan::FunctionCallbackInfo<Value>& args) {
 	GUID pageGuid;
 	double width, height;
 	DOCINFO docInfo = { sizeof(DOCINFO), printJobName };
-	Graphics graphics(hdcPrint);
-
+	Graphics* graphics = Graphics::FromHDC(hdcPrint);
+	
 	int printJobId = StartDoc(hdcPrint, &docInfo);
 
 	// Loading image from bytes
 	IStream *istream = SHCreateMemStream((BYTE*)imageBuffer, imageSize);
-	Image image(istream, true);
+	Image* image = Image::FromStream(istream, true);
 
 	// Get the list of frame dimensions from the Image object
-	dimCount = image.GetFrameDimensionsCount();
+	dimCount = image->GetFrameDimensionsCount();
 	pDimIDs = new GUID[dimCount];
 
 	// Get the number of frames (pages) in the first dimension
-	image.GetFrameDimensionsList(pDimIDs, dimCount);
-	frameCount = image.GetFrameCount(&pDimIDs[0]);
+	image->GetFrameDimensionsList(pDimIDs, dimCount);
+	frameCount = image->GetFrameCount(&pDimIDs[0]);
 
 	// Not use de-constructor
 	delete pDimIDs;
-
+	
 	pageGuid = FrameDimensionPage;
 
 	for (UINT i = 0; i < frameCount; i++)
 	{
 		StartPage(hdcPrint);
-		image.SelectActiveFrame(&pageGuid, i);
-		graphics.SetPageUnit(UnitInch);
+		image->SelectActiveFrame(&pageGuid, i);
+		graphics->SetPageUnit(UnitInch);
 		// width = (image_width * 25.4mm / 203 dpi) / 25.4
-		width = (image.GetWidth() * 25.4 / (double)GetDeviceCaps(hdcPrint, LOGPIXELSX)) / 25.4;
+		width = (image->GetWidth() * 25.4 / (double)GetDeviceCaps(hdcPrint, LOGPIXELSX)) / 25.4;
 		// height = (image_height * 25.4mm / 203 dpi) / 25.4
-		height = (image.GetHeight() * 25.4 / (double)GetDeviceCaps(hdcPrint, LOGPIXELSY)) / 25.4;		
-		graphics.DrawImage(&image, 0.f, 0.f, width, height);
+		height = (image->GetHeight() * 25.4 / (double)GetDeviceCaps(hdcPrint, LOGPIXELSY)) / 25.4;		
+		graphics->DrawImage(image, 0.f, 0.f, width, height);
 		EndPage(hdcPrint);
 	}
 
 	EndDoc(hdcPrint);
 	DeleteDC(hdcPrint);
+	delete graphics;
+	delete image;
 	GdiplusShutdown(gdiplusToken);
 	args.GetReturnValue().Set(printJobId);
 }
