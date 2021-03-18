@@ -176,7 +176,7 @@ void printImageFromBytes(const Nan::FunctionCallbackInfo<Value>& args) {
 	UINT dimCount, frameCount;
 	GUID* pDimIDs;
 	GUID pageGuid;
-	float width, height;
+	double width, height;
 	DOCINFO docInfo = { sizeof(DOCINFO), printJobName };
 	Graphics graphics(hdcPrint);
 
@@ -202,14 +202,13 @@ void printImageFromBytes(const Nan::FunctionCallbackInfo<Value>& args) {
 	for (UINT i = 0; i < frameCount; i++)
 	{
 		StartPage(hdcPrint);
-
 		image.SelectActiveFrame(&pageGuid, i);
 		graphics.SetPageUnit(UnitInch);
-
-		width = image.GetWidth() / image.GetHorizontalResolution();
-		height = image.GetHeight() / image.GetVerticalResolution();
+		// width = (image_width * 25.4mm / 203 dpi) / 25.4
+		width = (image.GetWidth() * 25.4 / (double)GetDeviceCaps(hdcPrint, LOGPIXELSX)) / 25.4;
+		// height = (image_height * 25.4mm / 203 dpi) / 25.4
+		height = (image.GetHeight() * 25.4 / (double)GetDeviceCaps(hdcPrint, LOGPIXELSY)) / 25.4;		
 		graphics.DrawImage(&image, 0.f, 0.f, width, height);
-
 		EndPage(hdcPrint);
 	}
 

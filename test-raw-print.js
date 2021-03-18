@@ -12,8 +12,8 @@ fs.readFile('test.png', function (err, data) {
 		.then(async buff => {
 			// const result = await drawer.printImageFromFile("Microsoft Print to PDF", "My_print_job_1", "E:\\Projects\\PrintLib\\sample.png");
 			// const result2 = await drawer.printImageFromFile("Microsoft Print to PDF", "My_print_job_2", "E:\\Projects\\PrintLib\\test.png");
-			// const result3 = await drawer.printImageFromFile("Microsoft Print to PDF", "My_print_job_3", "E:\\Projects\\PrintLib\\bmp_24.bmp");
-			const result4 = await drawer.printImageFromBytes("Microsoft Print to PDF", "My_print_job_1", buff, buff.length);
+			// const result3 = await drawer.printImageFromFile("SGT-88IV Printer", "My_print_job_3", "E:\\Projects\\PrintLib\\SAMPLE-CODE_7849.png");
+			const result4 = await drawer.printImageFromBytes("SGT-88IV Printer", "My_print_job_1", buff, buff.length);
 			// console.log(result);
 			// console.log(result2);
 			// console.log(result3);	
