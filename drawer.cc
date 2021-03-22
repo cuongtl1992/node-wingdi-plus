@@ -15,9 +15,14 @@
 using namespace v8;
 using namespace Gdiplus;
 
-HDC createDCWithoutDialog(LPCSTR printerName) {
+HDC createDCWithoutDialog(const char *printer) {
+	int nChars = MultiByteToWideChar(CP_UTF8, 0, printer, -1, NULL, 0);
+	wchar_t* printerName = (wchar_t*)malloc(nChars * sizeof(wchar_t));
+	wmemset(printerName, 0x00, nChars);
+	MultiByteToWideChar(CP_UTF8, 0, printer, -1, (LPWSTR)printerName, nChars);
+
 	HDC hdcPrint;
-	hdcPrint = CreateDC(NULL, printerName, NULL, NULL);
+	hdcPrint = CreateDCW(NULL, printerName, NULL, NULL);
 	int lastErrorNumber = GetLastError();
 
 	if (hdcPrint == NULL) {
@@ -25,7 +30,7 @@ HDC createDCWithoutDialog(LPCSTR printerName) {
 		strcat(message, "createDC failed with code ");
 		strcat(message, std::to_string(lastErrorNumber).c_str());
 		strcat(message, ", printer: ");
-		strcat(message, printerName);
+		strcat(message, printer);
 		Nan::ThrowTypeError(message);
 		return NULL;
 	}
@@ -66,8 +71,8 @@ void printImageFromFile(const Nan::FunctionCallbackInfo<Value>& args) {
 	}
 
 	// Parse arguments
-	String::Utf8Value str0(args[0]);
-	LPCSTR printerName = ToCString(str0);
+	std::string val = *String::Utf8Value(args[0]);
+	const char *printerName = val.c_str();
 	String::Utf8Value str1(args[1]);
 	LPCSTR printJobName = ToCString(str1);
 	String::Utf8Value str2(args[2]);
@@ -156,8 +161,8 @@ void printImageFromBytes(const Nan::FunctionCallbackInfo<Value>& args) {
 	}
 
 	// Parse arguments
-	String::Utf8Value str0(args[0]);
-	LPCSTR printerName = ToCString(str0);
+	std::string val = *String::Utf8Value(args[0]);
+	const char* printerName = val.c_str();
 	String::Utf8Value str1(args[1]);
 	LPCSTR printJobName = ToCString(str1);
 	char* imageBuffer = node::Buffer::Data(args[2]->ToObject());

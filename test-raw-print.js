@@ -14,7 +14,7 @@ fs.readFile('test.png', function (err, data) {
 			// const result2 = await drawer.printImageFromFile("Microsoft Print to PDF", "My_print_job_2", "E:\\Projects\\PrintLib\\test.png");
 			// const result3 = await drawer.printImageFromFile("SGT-88IV Printer", "My_print_job_3", "E:\\Projects\\PrintLib\\SAMPLE-CODE_7849.png");
 			try {
-				const result4 = await drawer.printImageFromBytes("SGT-88IV Printer", "My_print_job_1", buff, buff.length);
+				const result4 = await drawer.printImageFromBytes("tôi là bếp", "My_print_job_1", buff, buff.length);
 				console.log(result4);	
 			} catch (error) {
 				console.log(error);	
