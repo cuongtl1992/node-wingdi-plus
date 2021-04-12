@@ -203,19 +203,55 @@ void printImageFromBytes(const Nan::FunctionCallbackInfo<Value>& args) {
 	// Not use de-constructor
 	delete pDimIDs;
 	
-	pageGuid = FrameDimensionPage;
+	double scaleRatioX = (double)image->GetVerticalResolution() / GetDeviceCaps(hdcPrint, LOGPIXELSX);
+	double scaleRatioY = (double)image->GetHorizontalResolution() / GetDeviceCaps(hdcPrint, LOGPIXELSY);
+	graphics->ScaleTransform(scaleRatioX, scaleRatioY);
 
+	pageGuid = FrameDimensionPage;
 	for (UINT i = 0; i < frameCount; i++)
 	{
-		StartPage(hdcPrint);
-		image->SelectActiveFrame(&pageGuid, i);
-		graphics->SetPageUnit(UnitInch);
-		// width = (image_width * 25.4mm / 203 dpi) / 25.4
-		width = (image->GetWidth() * 25.4 / (double)GetDeviceCaps(hdcPrint, LOGPIXELSX)) / 25.4;
-		// height = (image_height * 25.4mm / 203 dpi) / 25.4
-		height = (image->GetHeight() * 25.4 / (double)GetDeviceCaps(hdcPrint, LOGPIXELSY)) / 25.4;		
-		graphics->DrawImage(image, 0.f, 0.f, width, height);
-		EndPage(hdcPrint);
+		boolean isNexpage = true;
+		double imageWidth = image->GetWidth();
+		double imageHeight = image->GetHeight();
+		double vertres = GetDeviceCaps(hdcPrint, VERTRES);
+		
+		width = imageWidth;
+		height = imageHeight;
+		double startX = 0.f;
+		double startY = 0.f;
+		double printHeight = height;
+
+		double heighOfPrintArea = imageHeight;
+		int numberOfPrint = 0;
+
+		while(isNexpage) {
+			numberOfPrint++;
+			StartPage(hdcPrint);
+			image->SelectActiveFrame(&pageGuid, i);
+			// graphics->SetPageUnit(UnitInch);
+
+			if (vertres < heighOfPrintArea) {
+				printHeight = vertres;
+			}
+
+			RectF rect = RectF(0.f, 0.f, width, printHeight);
+			graphics->DrawImage(image, rect, 0.f, startY, width, printHeight, UnitPixel);
+			EndPage(hdcPrint);
+
+			std::cout << "vertres: " + std::to_string(vertres) << std::endl;
+			std::cout << "imageHeight: " + std::to_string(imageHeight) << std::endl;
+
+			heighOfPrintArea = heighOfPrintArea - vertres;
+			if(heighOfPrintArea > 0) {
+
+				startY = (vertres * numberOfPrint);
+				printHeight = height - startY;
+				std::cout << "startY: " + std::to_string(startY) << std::endl;
+				isNexpage = true;
+			} else{
+				isNexpage = false;
+			}
+		}
 	}
 
 	EndDoc(hdcPrint);
