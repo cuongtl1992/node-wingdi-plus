@@ -182,7 +182,6 @@ void printImageFromBytes(const Nan::FunctionCallbackInfo<Value>& args) {
 	UINT dimCount, frameCount;
 	GUID* pDimIDs;
 	GUID pageGuid;
-	double width, height;
 	DOCINFO docInfo = { sizeof(DOCINFO), printJobName };
 	Graphics* graphics = Graphics::FromHDC(hdcPrint);
 	
@@ -202,20 +201,36 @@ void printImageFromBytes(const Nan::FunctionCallbackInfo<Value>& args) {
 
 	// Not use de-constructor
 	delete pDimIDs;
-	
+	graphics->SetPageUnit(UnitInch);
 	pageGuid = FrameDimensionPage;
+
+	double printerMaxHeight = (double)GetDeviceCaps(hdcPrint, VERTSIZE) / 25.4;
+	double imgPrintWidth = (image->GetWidth() * 25.4 / (double)GetDeviceCaps(hdcPrint, LOGPIXELSX)) / 25.4;
+	double imgPrintHeight = (image->GetHeight() * 25.4 / (double)GetDeviceCaps(hdcPrint, LOGPIXELSY)) / 25.4;
+	double printedHeight = 0.f;
+	double printHeight = 0.f;
 
 	for (UINT i = 0; i < frameCount; i++)
 	{
-		StartPage(hdcPrint);
-		image->SelectActiveFrame(&pageGuid, i);
-		graphics->SetPageUnit(UnitInch);
-		// width = (image_width * 25.4mm / 203 dpi) / 25.4
-		width = (image->GetWidth() * 25.4 / (double)GetDeviceCaps(hdcPrint, LOGPIXELSX)) / 25.4;
-		// height = (image_height * 25.4mm / 203 dpi) / 25.4
-		height = (image->GetHeight() * 25.4 / (double)GetDeviceCaps(hdcPrint, LOGPIXELSY)) / 25.4;		
-		graphics->DrawImage(image, 0.f, 0.f, width, height);
-		EndPage(hdcPrint);
+		while (printedHeight < imgPrintHeight)
+		{
+			StartPage(hdcPrint);
+			image->SelectActiveFrame(&pageGuid, i);
+
+			if (printerMaxHeight < imgPrintHeight) 
+			{
+				printHeight = printerMaxHeight;
+			}
+			else 
+			{
+				printHeight = imgPrintHeight;
+			}
+
+			graphics->DrawImage(image, 0.f, printedHeight, imgPrintWidth, printHeight);
+			EndPage(hdcPrint);
+
+			printedHeight += printHeight;
+		}
 	}
 
 	EndDoc(hdcPrint);

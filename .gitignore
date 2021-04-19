@@ -117,3 +117,4 @@ dist
 
 build/Debug
 build/.vs
+.vs
