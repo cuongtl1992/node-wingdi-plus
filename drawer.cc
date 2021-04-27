@@ -15,7 +15,7 @@
 using namespace v8;
 using namespace Gdiplus;
 
-HDC createDCWithoutDialog(const char *printer) {
+HDC createDCWithoutDialog(const char* printer) {
 	int nChars = MultiByteToWideChar(CP_UTF8, 0, printer, -1, NULL, 0);
 	wchar_t* printerName = (wchar_t*)malloc(nChars * sizeof(wchar_t));
 	wmemset(printerName, 0x00, nChars);
@@ -72,7 +72,7 @@ void printImageFromFile(const Nan::FunctionCallbackInfo<Value>& args) {
 
 	// Parse arguments
 	std::string val = *String::Utf8Value(args[0]);
-	const char *printerName = val.c_str();
+	const char* printerName = val.c_str();
 	String::Utf8Value str1(args[1]);
 	LPCSTR printJobName = ToCString(str1);
 	String::Utf8Value str2(args[2]);
@@ -167,7 +167,7 @@ void printImageFromBytes(const Nan::FunctionCallbackInfo<Value>& args) {
 	LPCSTR printJobName = ToCString(str1);
 	char* imageBuffer = node::Buffer::Data(args[2]->ToObject());
 	unsigned int imageSize = args[3]->Uint32Value();
-	
+
 	std::cout << "Printing image from buffer array with arguments:" << std::endl;
 	std::cout << "Printer: " + std::string(printerName) << std::endl;
 	std::cout << "Print Job: " + std::string(printJobName) << std::endl;
@@ -184,11 +184,11 @@ void printImageFromBytes(const Nan::FunctionCallbackInfo<Value>& args) {
 	GUID pageGuid;
 	DOCINFO docInfo = { sizeof(DOCINFO), printJobName };
 	Graphics* graphics = Graphics::FromHDC(hdcPrint);
-	
+
 	int printJobId = StartDoc(hdcPrint, &docInfo);
 
 	// Loading image from bytes
-	IStream *istream = SHCreateMemStream((BYTE*)imageBuffer, imageSize);
+	IStream* istream = SHCreateMemStream((BYTE*)imageBuffer, imageSize);
 	Image* image = Image::FromStream(istream, true);
 
 	// Get the list of frame dimensions from the Image object
@@ -201,36 +201,25 @@ void printImageFromBytes(const Nan::FunctionCallbackInfo<Value>& args) {
 
 	// Not use de-constructor
 	delete pDimIDs;
-	graphics->SetPageUnit(UnitInch);
+	graphics->SetPageUnit(UnitPixel);
 	pageGuid = FrameDimensionPage;
 
-	double printerMaxHeight = (double)GetDeviceCaps(hdcPrint, VERTSIZE) / 25.4;
-	double imgPrintWidth = (image->GetWidth() * 25.4 / (double)GetDeviceCaps(hdcPrint, LOGPIXELSX)) / 25.4;
-	double imgPrintHeight = (image->GetHeight() * 25.4 / (double)GetDeviceCaps(hdcPrint, LOGPIXELSY)) / 25.4;
-	double printedHeight = 0.f;
-	double printHeight = 0.f;
+	float imageWidth = image->GetWidth();
+	float imageHeight = image->GetHeight();
+
+	double scaleRatioX = (double)image->GetVerticalResolution() / GetDeviceCaps(hdcPrint, LOGPIXELSX);
+	double scaleRatioY = (double)image->GetHorizontalResolution() / GetDeviceCaps(hdcPrint, LOGPIXELSY);
+	graphics->ScaleTransform(scaleRatioX, scaleRatioY);
 
 	for (UINT i = 0; i < frameCount; i++)
 	{
-		while (printedHeight < imgPrintHeight)
-		{
-			StartPage(hdcPrint);
-			image->SelectActiveFrame(&pageGuid, i);
+		StartPage(hdcPrint);
+		image->SelectActiveFrame(&pageGuid, i);
 
-			if (printerMaxHeight < imgPrintHeight) 
-			{
-				printHeight = printerMaxHeight;
-			}
-			else 
-			{
-				printHeight = imgPrintHeight;
-			}
+		graphics->SetInterpolationMode(InterpolationModeHighQualityBicubic);
+		graphics->DrawImage(image, 0.f, 0.f, 0.f, 0.f, imageWidth, imageHeight, UnitPixel);
 
-			graphics->DrawImage(image, 0.f, printedHeight, imgPrintWidth, printHeight);
-			EndPage(hdcPrint);
-
-			printedHeight += printHeight;
-		}
+		EndPage(hdcPrint);
 	}
 
 	EndDoc(hdcPrint);
@@ -242,8 +231,8 @@ void printImageFromBytes(const Nan::FunctionCallbackInfo<Value>& args) {
 }
 
 void getLastError(const Nan::FunctionCallbackInfo<Value>& args) {
-    int ret = GetLastError();
-    args.GetReturnValue().Set(ret);
+	int ret = GetLastError();
+	args.GetReturnValue().Set(ret);
 }
 
 void Init(v8::Local<v8::Object> exports) {

@@ -3,7 +3,7 @@ var http = require("http");
 var fs = require("fs");
 const jimp = require("jimp");
 
-fs.readFile("test2.png", function (err, data) {
+fs.readFile("test.png", function (err, data) {
   jimp
     .read(data)
     .then((image) => {
@@ -12,7 +12,11 @@ fs.readFile("test2.png", function (err, data) {
     })
     .then(async (buff) => {
       // const result = await drawer.printImageFromFile("Microsoft Print to PDF", "My_print_job_1", "E:\\Projects\\PrintLib\\sample.png");
-      // const result2 = await drawer.printImageFromFile("Microsoft Print to PDF", "My_print_job_2", "E:\\Projects\\PrintLib\\test.png");
+      // const result2 = await drawer.printImageFromFile(
+      //   "TSC TDP-244",
+      //   "My_print_job_2",
+      //   "E:\\Projects\\PrintLib\\test.png"
+      // );
       // const result3 = await drawer.printImageFromFile("SGT-88IV Printer", "My_print_job_3", "E:\\Projects\\PrintLib\\SAMPLE-CODE_7849.png");
       try {
         const result4 = await drawer.printImageFromBytes(
