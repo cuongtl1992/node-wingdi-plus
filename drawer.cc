@@ -201,7 +201,7 @@ void printImageFromBytes(const Nan::FunctionCallbackInfo<Value>& args) {
 
 	// Not use de-constructor
 	delete pDimIDs;
-	graphics->SetPageUnit(UnitPixel);
+	// graphics->SetPageUnit(UnitPixel);
 	pageGuid = FrameDimensionPage;
 
 	float imageWidth = image->GetWidth();
@@ -217,6 +217,11 @@ void printImageFromBytes(const Nan::FunctionCallbackInfo<Value>& args) {
 		image->SelectActiveFrame(&pageGuid, i);
 
 		graphics->SetInterpolationMode(InterpolationModeHighQualityBicubic);
+		double printWidth = GetDeviceCaps(hdcPrint, HORZRES);
+		double scaleRatioX = printWidth / imageWidth;
+
+		graphics->ScaleTransform(scaleRatioX, scaleRatioX);
+
 		graphics->DrawImage(image, 0.f, 0.f, 0.f, 0.f, imageWidth, imageHeight, UnitPixel);
 
 		EndPage(hdcPrint);
