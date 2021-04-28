@@ -15,7 +15,7 @@
 using namespace v8;
 using namespace Gdiplus;
 
-HDC createDCWithoutDialog(const char *printer) {
+HDC createDCWithoutDialog(const char* printer) {
 	int nChars = MultiByteToWideChar(CP_UTF8, 0, printer, -1, NULL, 0);
 	wchar_t* printerName = (wchar_t*)malloc(nChars * sizeof(wchar_t));
 	wmemset(printerName, 0x00, nChars);
@@ -72,7 +72,7 @@ void printImageFromFile(const Nan::FunctionCallbackInfo<Value>& args) {
 
 	// Parse arguments
 	std::string val = *String::Utf8Value(args[0]);
-	const char *printerName = val.c_str();
+	const char* printerName = val.c_str();
 	String::Utf8Value str1(args[1]);
 	LPCSTR printJobName = ToCString(str1);
 	String::Utf8Value str2(args[2]);
@@ -167,7 +167,7 @@ void printImageFromBytes(const Nan::FunctionCallbackInfo<Value>& args) {
 	LPCSTR printJobName = ToCString(str1);
 	char* imageBuffer = node::Buffer::Data(args[2]->ToObject());
 	unsigned int imageSize = args[3]->Uint32Value();
-	
+
 	std::cout << "Printing image from buffer array with arguments:" << std::endl;
 	std::cout << "Printer: " + std::string(printerName) << std::endl;
 	std::cout << "Print Job: " + std::string(printJobName) << std::endl;
@@ -182,14 +182,13 @@ void printImageFromBytes(const Nan::FunctionCallbackInfo<Value>& args) {
 	UINT dimCount, frameCount;
 	GUID* pDimIDs;
 	GUID pageGuid;
-	double width, height;
 	DOCINFO docInfo = { sizeof(DOCINFO), printJobName };
 	Graphics* graphics = Graphics::FromHDC(hdcPrint);
-	
+
 	int printJobId = StartDoc(hdcPrint, &docInfo);
 
 	// Loading image from bytes
-	IStream *istream = SHCreateMemStream((BYTE*)imageBuffer, imageSize);
+	IStream* istream = SHCreateMemStream((BYTE*)imageBuffer, imageSize);
 	Image* image = Image::FromStream(istream, true);
 
 	// Get the list of frame dimensions from the Image object
@@ -202,56 +201,30 @@ void printImageFromBytes(const Nan::FunctionCallbackInfo<Value>& args) {
 
 	// Not use de-constructor
 	delete pDimIDs;
-	
+	// graphics->SetPageUnit(UnitPixel);
+	pageGuid = FrameDimensionPage;
+
+	float imageWidth = image->GetWidth();
+	float imageHeight = image->GetHeight();
+
 	double scaleRatioX = (double)image->GetVerticalResolution() / GetDeviceCaps(hdcPrint, LOGPIXELSX);
 	double scaleRatioY = (double)image->GetHorizontalResolution() / GetDeviceCaps(hdcPrint, LOGPIXELSY);
 	graphics->ScaleTransform(scaleRatioX, scaleRatioY);
 
-	pageGuid = FrameDimensionPage;
 	for (UINT i = 0; i < frameCount; i++)
 	{
-		boolean isNexpage = true;
-		double imageWidth = image->GetWidth();
-		double imageHeight = image->GetHeight();
-		double vertres = GetDeviceCaps(hdcPrint, VERTRES);
-		
-		width = imageWidth;
-		height = imageHeight;
-		double startX = 0.f;
-		double startY = 0.f;
-		double printHeight = height;
+		StartPage(hdcPrint);
+		image->SelectActiveFrame(&pageGuid, i);
 
-		double heighOfPrintArea = imageHeight;
-		int numberOfPrint = 0;
+		graphics->SetInterpolationMode(InterpolationModeHighQualityBicubic);
+		double printWidth = GetDeviceCaps(hdcPrint, HORZRES);
+		double scaleRatioX = printWidth / imageWidth;
 
-		while(isNexpage) {
-			numberOfPrint++;
-			StartPage(hdcPrint);
-			image->SelectActiveFrame(&pageGuid, i);
-			// graphics->SetPageUnit(UnitInch);
+		graphics->ScaleTransform(scaleRatioX, scaleRatioX);
 
-			if (vertres < heighOfPrintArea) {
-				printHeight = vertres;
-			}
+		graphics->DrawImage(image, 0.f, 0.f, 0.f, 0.f, imageWidth, imageHeight, UnitPixel);
 
-			RectF rect = RectF(0.f, 0.f, width, printHeight);
-			graphics->DrawImage(image, rect, 0.f, startY, width, printHeight, UnitPixel);
-			EndPage(hdcPrint);
-
-			std::cout << "vertres: " + std::to_string(vertres) << std::endl;
-			std::cout << "imageHeight: " + std::to_string(imageHeight) << std::endl;
-
-			heighOfPrintArea = heighOfPrintArea - vertres;
-			if(heighOfPrintArea > 0) {
-
-				startY = (vertres * numberOfPrint);
-				printHeight = height - startY;
-				std::cout << "startY: " + std::to_string(startY) << std::endl;
-				isNexpage = true;
-			} else{
-				isNexpage = false;
-			}
-		}
+		EndPage(hdcPrint);
 	}
 
 	EndDoc(hdcPrint);
@@ -263,8 +236,8 @@ void printImageFromBytes(const Nan::FunctionCallbackInfo<Value>& args) {
 }
 
 void getLastError(const Nan::FunctionCallbackInfo<Value>& args) {
-    int ret = GetLastError();
-    args.GetReturnValue().Set(ret);
+	int ret = GetLastError();
+	args.GetReturnValue().Set(ret);
 }
 
 void Init(v8::Local<v8::Object> exports) {
